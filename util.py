@@ -59,8 +59,6 @@ def prep_graphs(graphs, width, stride, field_size):
         return a tensor of size (num_graphs
     '''
 
-
-
 if __name__ == '__main__':
     dataset = sys.argv[1]
     fname = 'data/%s.mat' % dataset
