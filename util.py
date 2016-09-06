@@ -54,10 +54,12 @@ def sorted_verts(graph):
     verts.sort(key=lambda x: graph.label(x))
     return verts
 
-def prep_graph(graphs, width, stride, field_size):
+def prep_graphs(graphs, width, stride, field_size):
     '''
-        return a tensor
+        return a tensor of size (num_graphs
     '''
+
+
 
 if __name__ == '__main__':
     dataset = sys.argv[1]
