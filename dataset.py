@@ -7,25 +7,30 @@ class GraphDataset(object):
         self._graph_labels = labels
         self._batch_size = batch_size
         self._size = len(self._graphs)
+        self._avg_nodes = None
         self._index = 0
         self._all_vert_labels = self._get_all_vert_labels()
         self._all_edge_labels = self._get_all_edge_labels()
         self._data = self.gen_channels(**params)
-        pdb.set_trace()
 
     def _get_all_edge_labels(self):
         all_labels = set()
         for g in self._graphs:
-            all_labels = all_labels.union(g.edge_labels()) 
+            all_labels = all_labels.union(g.edge_labels())
 
-        return list(all_labels) 
+        return list(all_labels)
 
     def _get_all_vert_labels(self):
         all_labels = set()
         for g in self._graphs:
-            all_labels = all_labels.union(g.node_labels()) 
+            all_labels = all_labels.union(g.node_labels())
 
         return list(all_labels)
+
+    def avg_nodes(self):
+        if self._avg_nodes == None:
+            self._avg_nodes = np.mean([g.size for g in self._graphs])
+        return self._avg_nodes
 
     def next_batch(self):
         # shuffle and reset index if necessary

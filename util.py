@@ -74,6 +74,19 @@ def gen_adj_list(mat):
 
     return adj_lst
 
+def train_test_split(data, labels, proportions):
+    '''
+    Proportions is a list of proportions for the train, val and test split
+    '''
+    if len(proportions) != 3:
+        raise Exception("Must supply a proportion for the train, val and test split")
+    if sum(proportions) != 1:
+        total = sum(proportions)
+        train_prop = proportions[0] / total
+        val_prop = proportions[1] / total
+        test_prop = proportions[2] / total
+        # TODO: Do stratified kfold
+
 if __name__ == '__main__':
     dataset = sys.argv[1]
     fname = 'data/%s.mat' % dataset
