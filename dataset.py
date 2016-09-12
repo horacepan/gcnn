@@ -8,10 +8,10 @@ class GraphDataset(object):
         self._batch_size = batch_size
         self._size = len(self._graphs)
         self._index = 0
-        self._data = self.gen_channels(**params)
-
         self._all_vert_labels = self._get_all_vert_labels()
         self._all_edge_labels = self._get_all_edge_labels()
+        self._data = self.gen_channels(**params)
+        pdb.set_trace()
 
     def _get_all_edge_labels(self):
         all_labels = set()
@@ -41,17 +41,14 @@ class GraphDataset(object):
             num_channels = len(self._all_edge_labels)
             output_shape = (self._size, width,  nbr_size * nbr_size, num_channels)
         else:
-            pdb.set_trace()
             num_channels = len(self._all_vert_labels)
             output_shape = (self._size, width,  nbr_size, num_channels)
         output = np.zeros(output_shape)
 
-        for index, graph in enumerate(self._data):
+        for index, graph in enumerate(self._graphs):
             sampled_verts = graph.sample(width, stride)
-            layer = graph.kneighbors_lst(sampled_verts, k, labeled=True)
-            graph.gen_channels(layer, self._all_vert_labels_labels)
-            # graph.gen_channels(layer, edge_labels)
-            layer = layer.reshape()
-            output[index] = layer
+            layer = graph.kneighbors_lst(sampled_verts, nbr_size, labeled=True)
+            layer_channels = graph.gen_channels(layer, self._all_vert_labels)
+            output[index] = layer_channels
 
         return output

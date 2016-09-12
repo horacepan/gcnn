@@ -34,7 +34,7 @@ def _clean_adj_lst(adj_lst):
 
 def load_mat(fname, name, lname=None):
     mat = sio.loadmat(fname)
-    lname = 'l' + name.lower() if lname == None else lname
+    lname = 'l' + name.lower()
     labels = mat[lname]
     data = mat[name]
 
@@ -45,24 +45,37 @@ def load_mat(fname, name, lname=None):
         node_labels = _clean_node_labels(data[0][i][NODE_LABELS])
         edge_labels = _clean_edge_labels(data[0][i][EDGE_LABELS])
         adj_lst = _clean_adj_lst(data[0][i][ADJ_LST])
-        graphs.append(Graph(adj_mat, node_labels, edge_labels, adj_lst, labels))
+        graphs.append(Graph(adj_mat, node_labels, edge_labels, adj_lst))
 
+    return graphs, labels
+
+def load_dataset(fname, name, k):
+    graphs = load_mat(fname, name)
+    dataset = GraphDataset(graphs)
     return graphs
 
-def sorted_verts(graph):
-    verts = range(1, graph.size()+1)
-    verts.sort(key=lambda x: graph.label(x))
-    return verts
+def floyd_warshall(adj_mat):
+    '''
+    Return a matrix whose (i, j) entry is the distance from vertex i to vertex j
+    '''
+    pass
 
-def prep_graphs(graphs, width, stride, field_size):
+def gen_adj_list(mat):
     '''
-        return a tensor of size (num_graphs
+    adj_mat is a nxn numpy array
+    TODO: do we want a list of lists as an output or a dict from vertice to list of neighbors
     '''
+    adj_lst = []
+    adj_lst_dict = {}
+
+    for row in range(len(mat)):
+        adj_lst.append(list(np.nonzero(mat[row, :])))
+        adj_lst_dict[row+1] = list(np.nonzero(mat[row, :])) # vertices will be 1:n, not 0-indexed
+
+    return adj_lst
 
 if __name__ == '__main__':
     dataset = sys.argv[1]
     fname = 'data/%s.mat' % dataset
-    lname = 'l' + dataset.lower() if dataset != 'ENZYMES_SYM' else 'lenzymes'
-    dataset = 'ENZYMES' if dataset == 'ENZYMES_SYM' else dataset
+    lname = 'l' + dataset.lower()
     mat = load_mat(fname, dataset, lname)
-    pdb.set_trace()
