@@ -1,3 +1,4 @@
+from __future__ import division
 from graph import Graph
 import util
 import numpy as np
@@ -45,6 +46,7 @@ def train_val_test_split(data, labels, proportions):
         total = sum(proportions)
         proportions = [(p / total) for p in proportions]
 
+    size = len(data)
     train_size = proportions[0] * size
     val_size   = proportions[1] * size
     test_size  = proportions[2] * size
@@ -58,7 +60,7 @@ def train_val_test_split(data, labels, proportions):
     labels = labels[permutation]
 
     train_data, train_labels = data[:train_size], labels[:train_size]
-    val_data, val = data[train_size:train_size + val_size], labels[train_size:train_size+val_size]
+    val_data, val_labels = data[train_size:train_size + val_size], labels[train_size:train_size+val_size]
     test_data, test_labels = data[train_size+val_size:], labels[train_size+val_size:]
 
     train = {'data': train_data, 'labels': train_labels}
@@ -99,7 +101,7 @@ def load_dataset(fname, name, params):
     graphs, labels = load_mat(fname, name)
     avg_nodes = util.avg_nodes(graphs)
     params['graphs'] = graphs
-    params['width'] = avg_nodes
+    params['width'] = int(avg_nodes)
     normalized_data = util.gen_channels(**params)
 
     return normalized_data, labels

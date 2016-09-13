@@ -27,16 +27,16 @@ def gen_adj_list(mat):
 
     return adj_lst
 
-def make_one_hot(labels, max_label=None):
+def make_one_hot(labels):
     '''
     Takes in a nx1 vector of discrete labels(or a list).
     Returns nxc vector, where c is the total number of discrete labels.
     '''
     # TODO: some datasets do +/- 1 as labels... so this will have some index ob errors
-    if max_label == None:
-        max_label = max(labels)
-    one_hot = np.zeros((len(labels), max_label))
-    for i in range(len(labels)):
+    unique_labels = list(set(labels))
+    cleaned_labels = range(1, len(labels)+1) # always convert labels to 1 to n
+    one_hot = np.zeros((len(labels), len(cleaned_labels)))
+    for i in range(len(cleaned_labels)):
         one_hot[i, labels[i]-1] = 1 # assume that labels are 1 to max_labels so we -1
 
     return one_hot
@@ -52,10 +52,9 @@ def get_all_labels(graphs, label_type='node'):
 def gen_channels(graphs=None, width=5, nbr_size=5, stride=1, channel_type=NODE):
     '''
     Returns a (num_graphs, width, nbr_size, num_labels) tensor if the channel type is NODE
-    Returns a (num_graphs, width, nbr_size^2, num_labels) tensor if the channel type is EDGE 
+    Returns a (num_graphs, width, nbr_size^2, num_labels) tensor if the channel type is EDGE
     '''
-    output = np.zeros(output_shape)
-    all_labels = get_all_node_labels(graphs, channel_type)
+    all_labels = get_all_labels(graphs, channel_type)
     func_params = {
         'vert_ids': None,           # gets filled in in each loop iteration
         'k': nbr_size,
@@ -69,6 +68,7 @@ def gen_channels(graphs=None, width=5, nbr_size=5, stride=1, channel_type=NODE):
         output_shape = (len(graphs), width,  nbr_size * nbr_size, len(all_labels))
         fname = 'knbr_edges'
 
+    output = np.zeros(output_shape)
     for index, graph in enumerate(graphs):
         sampled_verts = graph.sample(width, stride)
         func_params['vert_ids'] = sampled_verts
@@ -84,7 +84,7 @@ def single_channel(layer, all_labels):
     '''
     new_shape = list(layer.shape) + [len(all_labels)]
     channels = np.zeros(new_shape)
-    for ind, l in enumerate(labels):
+    for ind, l in enumerate(all_labels):
         channels[:, :, ind] = (layer == l)
     return channels
 

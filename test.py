@@ -15,8 +15,10 @@ def test_mutag():
        'channel_type': util.NODE,
     }
     normalized_data, labels = ioutil.load_dataset('data/MUTAG.mat', 'MUTAG', params)
-    train, val, test = util.train_val_test_split(normalized_data, labels, [3,1,1])
+    train, val, test = ioutil.train_val_test_split(normalized_data, labels, [3,1,1])
     train_dataset = Dataset(train['data'], train['labels'], batch_size)
+    print train, val, test
+    pdb.set_trace()
 
 if __name__ == '__main__':
     test_mutag()
