@@ -1,68 +1,15 @@
 import scipy.io as sio
+import numpy as np
 from graph import Graph
 import pdb
 import sys
 
-ADJ_MAT = 0
-NODE_LABELS = 1
-EDGE_LABELS = 2
-ADJ_LST = 3
-
-def _clean_node_labels(node_labels):
-    lbls = node_labels[0][0][0].flatten()
-    cleaned = {i+1: val for (i, val) in enumerate(lbls)}
-    return cleaned
-
-def _clean_edge_labels(edge_lbls):
-    lbls = edge_lbls[0][0][0]
-    edge_lbls = {}
-
-    for i, j, k in lbls:
-        edge_lbls[(i, j)] = k
-
-    return edge_lbls
-
-def _clean_adj_lst(adj_lst):
-    size = len(adj_lst)
-    adj_lsts = {}
-
-    for i in range(size):
-        adj= list(adj_lst[i][0][0])
-        adj_lsts[i+1] = adj
-
-    return adj_lsts
-
-def load_mat(fname, name, lname=None):
-    mat = sio.loadmat(fname)
-    lname = 'l' + name.lower()
-    labels = mat[lname]
-    data = mat[name]
-
-    labels = labels.reshape(len(labels))
-    graphs = []
-    for i in range(len(labels)):
-        adj_mat = data[0][i][ADJ_MAT]
-        node_labels = _clean_node_labels(data[0][i][NODE_LABELS])
-        edge_labels = _clean_edge_labels(data[0][i][EDGE_LABELS])
-        adj_lst = _clean_adj_lst(data[0][i][ADJ_LST])
-        graphs.append(Graph(adj_mat, node_labels, edge_labels, adj_lst))
-
-    return graphs, labels
-
-def load_dataset(fname, name, k):
-    graphs = load_mat(fname, name)
-    params = {
-        'width': 17, # TODO: Change/compute it normally
-        'nbr_size': 5,
-        'stride': 1,
-        'channel_type': 'vertices',
-    }
-    dataset = GraphDataset(graphs)
-    return graphs
-
+NODE = 'node'
+EDGE = 'edge'
 def floyd_warshall(adj_mat):
     '''
     Return a matrix whose (i, j) entry is the distance from vertex i to vertex j
+    TODO: to be used for the sort function
     '''
     pass
 
@@ -80,34 +27,69 @@ def gen_adj_list(mat):
 
     return adj_lst
 
-def train_val_test_split(data, labels, proportions):
+def make_one_hot(labels, max_label=None):
     '''
-    Proportions is a list of proportions for the train, val and test split
+    Takes in a nx1 vector of discrete labels(or a list).
+    Returns nxc vector, where c is the total number of discrete labels.
     '''
-    if len(proportions) != 3:
-        raise Exception("Must supply a proportion for the train, val and test split")
-    if sum(proportions) != 1:
-        total = sum(proportions)
-        size = len(data)
-        train_size = (proportions[0] / total)* size  
-        val_size = (proportions[1] / total)  * size 
-        test_size = (proportions[2] / total) * size 
-        # give the leftovers to the test set
-        if (train_size + val_size + test_size < size):
-            test_size = size - (train_size + val_size + test_size)
+    # TODO: some datasets do +/- 1 as labels... so this will have some index ob errors
+    if max_label == None:
+        max_label = max(labels)
+    one_hot = np.zeros((len(labels), max_label))
+    for i in range(len(labels)):
+        one_hot[i, labels[i]-1] = 1 # assume that labels are 1 to max_labels so we -1
 
-        permutation = np.random.permutation(size)
-        
-        data = data[permutation]
-        labels = labels[permutation]
-        train_data, train_labels = data[:train_size], labels[:train_size]
-        val_data, val = data[train_size:train_size + val_size], labels[train_size:train_size+val_size]
-        test_data, test_labels = data[train_size+val_size:], labels[train_size+val_size:]
+    return one_hot
 
-        train = {'data': train_data, 'labels:' train_labels} 
-        val = {'data': val_data, 'labels:' val_labels} 
-        test = {'data': test_data, 'labels:' test_labels} 
-        return {'train': train, 'val': val, 'test': test}  
+def get_all_labels(graphs, label_type='node'):
+    labels = set()
+    fname = 'node_labels' if label_type == 'node' else 'edge_labels'
+    for g in graphs:
+        g_labels = getattr(g, fname)()
+        labels = labels.union(g_labels)
+    return labels
+
+def gen_channels(graphs=None, width=5, nbr_size=5, stride=1, channel_type=NODE):
+    '''
+    Returns a (num_graphs, width, nbr_size, num_labels) tensor if the channel type is NODE
+    Returns a (num_graphs, width, nbr_size^2, num_labels) tensor if the channel type is EDGE 
+    '''
+    output = np.zeros(output_shape)
+    all_labels = get_all_node_labels(graphs, channel_type)
+    func_params = {
+        'vert_ids': None,           # gets filled in in each loop iteration
+        'k': nbr_size,
+        'sortfunc': (lambda x: x),  # TODO: use a real sort func
+    }
+
+    if channel_type == NODE:
+        output_shape = (len(graphs), width,  nbr_size, len(all_labels))
+        fname = 'knbrs_lst'
+    else:
+        output_shape = (len(graphs), width,  nbr_size * nbr_size, len(all_labels))
+        fname = 'knbr_edges'
+
+    for index, graph in enumerate(graphs):
+        sampled_verts = graph.sample(width, stride)
+        func_params['vert_ids'] = sampled_verts
+        layer = getattr(graph, fname)(**func_params)
+        output[index] = single_channel(layer, all_labels)
+
+    return output
+
+def single_channel(layer, all_labels):
+    '''
+    Given an nxm matrix of labels, returns a n x m x l matrix where
+    the n x m slice at index i = the boolean mask of the input matrix for label l_i
+    '''
+    new_shape = list(layer.shape) + [len(all_labels)]
+    channels = np.zeros(new_shape)
+    for ind, l in enumerate(labels):
+        channels[:, :, ind] = (layer == l)
+    return channels
+
+def avg_nodes(graphs):
+    return np.mean([g.size for g in graphs])
 
 if __name__ == '__main__':
     dataset = sys.argv[1]

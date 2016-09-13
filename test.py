@@ -1,21 +1,22 @@
 import util
+import ioutil
 import numpy as np
 import graph
-from dataset import GraphDataset
+from dataset import *
 import pdb
 
 def test_mutag():
-    graphs, labels = util.load_mat('data/MUTAG.mat', 'MUTAG')
+    fname = 'data/MUTAG.mat'
+    name = 'MUTAG'
+    batch_size = 32
     params = {
-       'width': 30,
-       'nbr_size': 3,
+       'nbr_size': 5,
        'stride': 1,
-       'channel_type': 'vertices',
+       'channel_type': util.NODE,
     }
-    dataset = GraphDataset(graphs, labels, 32, params)
-    data = dataset.data()
-    labels = dataset.labels()
-    train, val, test = util.train_val_test_split(data, labels, [3,1,1])
+    normalized_data, labels = ioutil.load_dataset('data/MUTAG.mat', 'MUTAG', params)
+    train, val, test = util.train_val_test_split(normalized_data, labels, [3,1,1])
+    train_dataset = Dataset(train['data'], train['labels'], batch_size)
 
 if __name__ == '__main__':
     test_mutag()

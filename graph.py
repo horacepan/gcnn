@@ -108,7 +108,7 @@ class Graph(object):
         else:
             return knbrs
 
-    def kneighbors_lst(self, vert_ids, k, sortfunc=None, labeled=False):
+    def knbrs_lst(self, vert_ids, k, sortfunc=None, labeled=True):
         output_shape = (len(vert_ids), k)
         output = np.zeros(output_shape)
         for index, v in enumerate(vert_ids):
