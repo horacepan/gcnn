@@ -51,6 +51,12 @@ def load_mat(fname, name, lname=None):
 
 def load_dataset(fname, name, k):
     graphs = load_mat(fname, name)
+    params = {
+        'width': 17, # TODO: Change/compute it normally
+        'nbr_size': 5,
+        'stride': 1,
+        'channel_type': 'vertices',
+    }
     dataset = GraphDataset(graphs)
     return graphs
 
@@ -74,7 +80,7 @@ def gen_adj_list(mat):
 
     return adj_lst
 
-def train_test_split(data, labels, proportions):
+def train_val_test_split(data, labels, proportions):
     '''
     Proportions is a list of proportions for the train, val and test split
     '''
@@ -82,10 +88,26 @@ def train_test_split(data, labels, proportions):
         raise Exception("Must supply a proportion for the train, val and test split")
     if sum(proportions) != 1:
         total = sum(proportions)
-        train_prop = proportions[0] / total
-        val_prop = proportions[1] / total
-        test_prop = proportions[2] / total
-        # TODO: Do stratified kfold
+        size = len(data)
+        train_size = (proportions[0] / total)* size  
+        val_size = (proportions[1] / total)  * size 
+        test_size = (proportions[2] / total) * size 
+        # give the leftovers to the test set
+        if (train_size + val_size + test_size < size):
+            test_size = size - (train_size + val_size + test_size)
+
+        permutation = np.random.permutation(size)
+        
+        data = data[permutation]
+        labels = labels[permutation]
+        train_data, train_labels = data[:train_size], labels[:train_size]
+        val_data, val = data[train_size:train_size + val_size], labels[train_size:train_size+val_size]
+        test_data, test_labels = data[train_size+val_size:], labels[train_size+val_size:]
+
+        train = {'data': train_data, 'labels:' train_labels} 
+        val = {'data': val_data, 'labels:' val_labels} 
+        test = {'data': test_data, 'labels:' test_labels} 
+        return {'train': train, 'val': val, 'test': test}  
 
 if __name__ == '__main__':
     dataset = sys.argv[1]

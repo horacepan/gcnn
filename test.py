@@ -13,6 +13,9 @@ def test_mutag():
        'channel_type': 'vertices',
     }
     dataset = GraphDataset(graphs, labels, 32, params)
+    data = dataset.data()
+    labels = dataset.labels()
+    train, val, test = util.train_val_test_split(data, labels, [3,1,1])
 
 if __name__ == '__main__':
     test_mutag()

@@ -4,7 +4,6 @@ import pdb
 class GraphDataset(object):
     def __init__(self, graphs, labels, batch_size, params):
         self._graphs = graphs
-        self._graph_labels = labels
         self._batch_size = batch_size
         self._size = len(self._graphs)
         self._avg_nodes = None
@@ -12,6 +11,7 @@ class GraphDataset(object):
         self._all_vert_labels = self._get_all_vert_labels()
         self._all_edge_labels = self._get_all_edge_labels()
         self._data = self.gen_channels(**params)
+        self._graph_labels = self.make_one_hot(labels)
 
     def _get_all_edge_labels(self):
         all_labels = set()
@@ -27,6 +27,12 @@ class GraphDataset(object):
 
         return list(all_labels)
 
+    def data(self):
+        return self._data
+
+    def labels(self):
+        return self._graph_labels
+
     def avg_nodes(self):
         if self._avg_nodes == None:
             self._avg_nodes = np.mean([g.size for g in self._graphs])
@@ -38,8 +44,11 @@ class GraphDataset(object):
             self._index = 0
             permutation = np.random.permutation[self._size]
             self._data = self._data[permutation]
+            self._graph_labels = self._graph_labels[permutation]
 
-        return self.data[self._index: self._index + self._batch_size]
+        start = self._index
+        end = start + batch_size
+        return self._data[start:end], self._graph_labels[start:end]
 
     def gen_channels(self, width=4, nbr_size=4, stride=1, channel_type='vertices'):
         if channel_type == 'edges':
@@ -57,3 +66,16 @@ class GraphDataset(object):
             output[index] = layer_channels
 
         return output
+
+    def make_one_hot(self, labels, max_label=None):
+        '''
+        Takes in a nx1 vector of discrete labels(or a list).
+        Returns nxc vector, where c is the total number of discrete labels.
+        '''
+        if max_label == None:
+            max_label = max(labels)
+        one_hot = np.zeros((len(labels), max_label))
+        for i in range(len(labels)):
+            one_hot[i, labels[i]-1] = 1 # assume that labels are 1 to max_labels so we -1
+
+        return one_hot
