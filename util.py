@@ -34,7 +34,7 @@ def make_one_hot(labels):
     '''
     # TODO: some datasets do +/- 1 as labels... so this will have some index ob errors
     unique_labels = list(set(labels))
-    cleaned_labels = range(1, len(labels)+1) # always convert labels to 1 to n
+    cleaned_labels = range(1, len(unique_labels)+1) # always convert labels to 1 to n
     one_hot = np.zeros((len(labels), len(cleaned_labels)))
     for i in range(len(cleaned_labels)):
         one_hot[i, labels[i]-1] = 1 # assume that labels are 1 to max_labels so we -1
@@ -91,6 +91,8 @@ def single_channel(layer, all_labels):
 def avg_nodes(graphs):
     return np.mean([g.size for g in graphs])
 
+def accuracy(predictions, labels):
+  return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))) / predictions.shape[0]
 if __name__ == '__main__':
     dataset = sys.argv[1]
     fname = 'data/%s.mat' % dataset

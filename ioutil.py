@@ -47,9 +47,9 @@ def train_val_test_split(data, labels, proportions):
         proportions = [(p / total) for p in proportions]
 
     size = len(data)
-    train_size = proportions[0] * size
-    val_size   = proportions[1] * size
-    test_size  = proportions[2] * size
+    train_size = int(proportions[0] * size)
+    val_size   = int(proportions[1] * size)
+    test_size  = int(proportions[2] * size)
     # give the leftovers to the test set
     if (train_size + val_size + test_size < size):
         test_size = size - (train_size + val_size + test_size)

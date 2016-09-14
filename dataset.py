@@ -16,13 +16,13 @@ class Dataset(object):
 
     def next_batch(self):
         # shuffle and reset index if necessary
-        if self._index + self._batch_size > self._size:
+        if self._index + self._batch_size > len(self._data):
             self._index = 0
-            permutation = np.random.permutation[self._size]
+            permutation = np.random.permutation(len(self._data))
             self._data = self._data[permutation]
-            self._graph_labels = self._graph_labels[permutation]
+            self._labels = self._labels[permutation]
 
         start = self._index
-        end = start + batch_size
+        end = start + self._batch_size
         self._index = end
-        return self._data[start:end], self._graph_labels[start:end]
+        return self._data[start:end], self._labels[start:end]
