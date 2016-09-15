@@ -12,42 +12,31 @@ def accuracy(pred_labels, true_labels):
 class GCNN(object):
     def __init__(self, train_dataset=None, val=None, test=None, batch_size=32, learning_rate=0.1,
                  dropout=0.5, width=10, nbr_size=5, out_channels_1=16, out_channels_2=8,
-                 num_vert_labels=None, edge_labels=None, **kwargs):
+                 num_vert_labels=None, num_edge_labels=None, **kwargs):
         self._train_dataset = train_dataset # dataset object
         self._val = val # dict mapping data/labels to the np arrays
         self._test = test # ditto ^
+
+        # model params
         self._batch_size = batch_size
         self._learning_rate = learning_rate
         self._dropout = dropout
         self._width = width
         self._nbr_size = nbr_size
-        #self._vert_labels = vert_labels
         self._num_vert_labels = num_vert_labels
-        self._edge_labels = edge_labels
+        self._num_edge_labels = num_edge_labels
         self._num_output = 2
         self._out_channels_1 = out_channels_1
         self._out_channels_2 = out_channels_2
-        self._params = {
-            'batch_size': batch_size,
-            'learning_rate': learning_rate,
-            'dropout': dropout,
-            'width': width,
-            'nbr_size': nbr_size,
-            'num_vert_labels': num_vert_labels,
-            'edge_labels': edge_labels,
-            'out_channels_1': out_channels_1,
-            'out_channels_2': out_channels_2,
-        }
 
         self.session = tf.Session()
         self._build_graph()
         self.session.run(tf.initialize_all_variables())
 
-
     def model(self, input_data):
-        out_channels_1 = 16
-        out_channels_2 = 8
-        fc_layer_shape = [8 * self._width, 2]
+        out_channels_1 = 8
+        out_channels_2 = 4
+        fc_layer_shape = [4 * self._width, 2]
         with tf.name_scope('conv1'):
             filter_shape = (1, self._nbr_size, self._num_vert_labels, self._out_channels_1)
             conv_filter = variable(shape=filter_shape, stddev=0.1, name='filter_c1')
@@ -72,8 +61,9 @@ class GCNN(object):
 
     def _build_graph(self):
         self._input_data = tf.placeholder(tf.float32, shape=(self._batch_size, self._width,
-self._nbr_size, self._num_vert_labels), name='input')
-        tf.reshape(self._input_data, [self._batch_size, 1, self._width * self._nbr_size, self._num_vert_labels]) # only doing verts for now
+                                          self._nbr_size, self._num_vert_labels), name='input')
+        tf.reshape(self._input_data, [self._batch_size, 1, self._width * self._nbr_size,
+                   self._num_vert_labels]) # only doing verts for now
         self._input_labels = tf.placeholder(tf.float32, shape=[self._batch_size, 2], name='labels')
         self._step = tf.placeholder(np.int32, name='iter_step')
         self._val_dataset = tf.constant(self._val['data'], dtype=tf.float32)
@@ -86,12 +76,13 @@ self._nbr_size, self._num_vert_labels), name='input')
 
         with tf.name_scope('loss'):
             self._loss = tf.reduce_mean(tf.nn.softmax_cross_entropy_with_logits(train_logits, self._input_labels), name='loss')
+            #self._loss = accuracy(tf.nn.softmax(train_logits), self._input_labels)
         with tf.name_scope('optimizer'):
             self._opt = tf.train.RMSPropOptimizer(self._learning_rate).minimize(self._loss)
         #with tf.name_scope('prediction'):
         #   self._train_prediction = tf.argmax(tf.nn.softmax(train_logits), 1)
 
-        
+
     def train(self, max_epochs=100, max_iters=20000):
         with self.session as sess:
             iteration = 0
@@ -104,12 +95,15 @@ self._nbr_size, self._num_vert_labels), name='input')
                 }
                 parts_to_compute = [self._opt, self._loss, self._train_prediction]
                 opt, loss, train_pred = sess.run(parts_to_compute, feed_dict)
-                if iteration % 1000 == 0:
+                if iteration % 500 == 0:
                     print("Iteration %d" % iteration)
-                    # TODO: print the validation error
                     valid_acc = util.accuracy(self._val_prediction.eval(), self._val['labels'])
                     train_acc = util.accuracy(train_pred, batch_labels)
                     print("Train acc: %.2f" % train_acc)
                     print("Valid acc: %.2f" % valid_acc)
                     print("=" * 80)
                 iteration += 1
+            print("Done with iterations")
+            test_acc = util.accuracy(self._test_prediction.eval(), self._test['labels'])
+            print("Test acc: %.2f" % test_acc)
+

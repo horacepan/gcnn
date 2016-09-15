@@ -25,14 +25,15 @@ def test_dataset(name):
         'test': test,
         'batch_size': 32,
         'learning_rate': 0.005,
-        'drop_out': 0.5,
+        'dropout': 0.5,
         'width': 17, # fix
         'nbr_size': 5,
         'num_vert_labels': 7,
     }
     gcnn = GCNN(**gcnn_params)
-    gcnn.train()
+    gcnn.train(max_iters=10000)
 
 if __name__ == '__main__':
-    #test_dataset('MUTAG')
+    test_dataset('MUTAG')
+    print("Done with MUTAG")
     test_dataset('PTC')

@@ -4,34 +4,35 @@ import pdb
 
 class Graph(object):
 
-    def __init__(self, adj_mat, node_labels, edge_labels, adj_lst=None):
+    def __init__(self, adj_mat, node_labels_dict, edge_labels_dict, adj_lst_dict=None):
         self._adj_mat = adj_mat         # a nxn numpy array
-        self._node_labels = node_labels # map of node to their label
-        self._edge_labels = edge_labels # map of edge(i,j) to label
-        self._adj_lst = adj_lst         # map from vertex id to list of vertex ids
+        self._node_labels_dict = node_labels_dict # map of node to their label
+        self._edge_labels_dict = edge_labels_dict # map of edge(i,j) to label
+        self._adj_lst_dict = adj_lst_dict         # map from vertex id to list of vertex ids
         self._vertices = range(1, len(self._adj_mat) + 1)       # vertex ids will always be 1 to n
         self._distances = util.floyd_warshall(self._adj_mat)    # matrix of pairwise distances
-        if adj_lst == None:
-            self._adj_lst = util.gen_adj_lst(adj_mat)
+        if adj_lst_dict == None:
+            self._adj_lst_dict = util.gen_adj_lst_dict(adj_mat)
 
     @property
     def size(self):
         return self._adj_mat.shape[0]
 
     def node_labels(self):
-        return set(self._node_labels.values())
+        return set(self._node_labels_dict.values())
 
     def edge_labels(self):
-        return set(self._edge_labels.values())
+        return set(self._edge_labels_dict.values())
 
     def labels(self, vert_id):
         '''
-        Returns the labels of the given vertex/vertices.
+        Input: a list of vertex ids(int) or a single vertex id(int)
+        Returns the labels of the given vertex/vertices. Use none if the vert_id isnt in the graph.
         '''
         if type(vert_id) == list:
-            return map(lambda x: self._node_labels.get(x, None), vert_id)
+            return map(lambda x: self._node_labels_dict.get(x, None), vert_id)
         else:
-            return [self._node_labels.get(vert_id, None)]
+            return [self._node_labels_dict.get(vert_id, None)]
 
     def neighbors(self, vert_id):
         '''
@@ -42,7 +43,7 @@ class Graph(object):
         if vert_id > self.size or vert_id < 1:
             raise Exception("%d is not a valid vertex id" % vert)
         if type(vert_id)!= list:
-            return self._adj_lst.get(vert_id, [])
+            return self._adj_lst_dict.get(vert_id, [])
         else: # vert_id is a list of vert ids
             nbrs = set()
             for v in vert_id:
@@ -89,15 +90,17 @@ class Graph(object):
         if vert_id == None or vert_id == 0:
             return [0] * k
 
-        sortfunc = (lambda x: x) if sortfunc == None else sortfunc
+        # Sort b distance to the origin vert_id, and use label as a tie breaker
+        if sortfunc == None:
+            sortfunc = lambda x: (self._distances[x, vert_id], self._node_labels_dict[x])
+
         nbrs = set([vert_id])
         knbrs = []
 
-        # TODO: infinite loop?
         while len(knbrs) < k:
             knbrs.extend(nbrs)
             nbrs = reduce(lambda acc, x: acc.union(self.neighbors(x)), nbrs, set())
-            # no more new vertices to add to knbrs
+            # no more new vertices to add to knbrs. Stop to avoid inf loop
             if knbrs == nbrs:
                 break
 
@@ -122,7 +125,6 @@ class Graph(object):
         If labeled is true, the (i, j) entry of the output matrix is the label of (i,j) instead
         of 0/1.
         '''
-        sortfunc = (lambda x: x) if sortfunc == None else sortfunc
         output = np.zeros((k, k))
 
         if vert_id == None:
@@ -135,9 +137,9 @@ class Graph(object):
                 v1 = knbrs[i]
                 v2 = knbrs[j]
                 if labeled:
-                    output[i, j] = self._edge_labels.get((v1, v2), 0)
+                    output[i, j] = self._edge_labels_dict.get((v1, v2), 0)
                 else:
-                    output[i, j] = 1 if (v1, v2) in self._edge_labels else 0
+                    output[i, j] = 1 if (v1, v2) in self._edge_labels_dict else 0
 
         return output
 
@@ -151,11 +153,13 @@ class Graph(object):
 
     def sample(self, width, stride=None, sortfunc=None):
         '''
-        Returns w vertices, spaced apart by the given stride length according to the given sortfunc.
+        Returns {width} vertices, spaced apart by stride according to the given sortfunc.
         This function always returns a list of length w. If there are not enough vertices to
         accomodate w and the stride length, the list is padded with None values.
         '''
-        sortfunc = (lambda x: x) if sortfunc == None else sortfunc
+        # Sort by the vertex label. Use vertex degree as tiebreaker.
+        if sortfunc == None:
+            sortfunc = (lambda x: (self._node_labels_dict.get(x, None), len(self._adj_lst_dict.get(x, None))))
         sorted_verts = sorted(self._vertices, key=sortfunc)
         chosen_verts = [sorted_verts[stride*i] if stride*i < len(sorted_verts) else None for i in range(width)]
 
@@ -174,9 +178,11 @@ class Graph(object):
             channels[:, :, ind] = (tensor == l)
         return channels
 
+
     def debug_print(self):
         print 'adj matrix:'
         print self._adj_mat
         print 'edge labels:'
-        print self._edge_labels
+        print self._edge_labels_dict
         print 'vert labels:'
+        print self._node_labels_dict

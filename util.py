@@ -9,23 +9,37 @@ EDGE = 'edge'
 def floyd_warshall(adj_mat):
     '''
     Return a matrix whose (i, j) entry is the distance from vertex i to vertex j
-    TODO: to be used for the sort function
+    TODO: vectorize
     '''
-    pass
+    num_verts = len(adj_mat)
+    dist = np.zeros((num_verts, num_verts))
+    xs, ys = np.nonzero(adj_mat)
 
-def gen_adj_list(mat):
+    for i in range(len(xs)):
+        dist[xs[i], ys[i]] = 1
+        dist[ys[i], xs[i]] = 1
+
+    for k in range(num_verts):
+        for i in range(num_verts):
+            for j in range(num_verts):
+                if dist[i, j] > dist[i, k] + dist[k, j]:
+                    dist[i, j] = dist[i, k] + dist[k, j]
+                    dist[j, i] = dist[i, j]
+
+    assert (dist == dist.T).all()
+    return dist
+
+def gen_adj_list_dict(mat):
     '''
     adj_mat is a nxn numpy array
     TODO: do we want a list of lists as an output or a dict from vertice to list of neighbors
     '''
-    adj_lst = []
     adj_lst_dict = {}
 
     for row in range(len(mat)):
-        adj_lst.append(list(np.nonzero(mat[row, :])))
         adj_lst_dict[row+1] = list(np.nonzero(mat[row, :])) # vertices will be 1:n, not 0-indexed
 
-    return adj_lst
+    return adj_lst_dict
 
 def make_one_hot(labels):
     '''
@@ -93,6 +107,7 @@ def avg_nodes(graphs):
 
 def accuracy(predictions, labels):
   return (100.0 * np.sum(np.argmax(predictions, 1) == np.argmax(labels, 1))) / predictions.shape[0]
+
 if __name__ == '__main__':
     dataset = sys.argv[1]
     fname = 'data/%s.mat' % dataset
