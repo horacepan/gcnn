@@ -1,6 +1,5 @@
 import scipy.io as sio
 import numpy as np
-from graph import Graph
 import pdb
 import sys
 
@@ -28,32 +27,6 @@ def floyd_warshall(adj_mat):
 
     assert (dist == dist.T).all()
     return dist
-
-def gen_adj_list_dict(mat):
-    '''
-    adj_mat is a nxn numpy array
-    TODO: do we want a list of lists as an output or a dict from vertice to list of neighbors
-    '''
-    adj_lst_dict = {}
-
-    for row in range(len(mat)):
-        adj_lst_dict[row+1] = list(np.nonzero(mat[row, :])) # vertices will be 1:n, not 0-indexed
-
-    return adj_lst_dict
-
-def make_one_hot(labels):
-    '''
-    Takes in a nx1 vector of discrete labels(or a list).
-    Returns nxc vector, where c is the total number of discrete labels.
-    '''
-    # TODO: some datasets do +/- 1 as labels... so this will have some index ob errors
-    unique_labels = list(set(labels))
-    cleaned_labels = range(1, len(unique_labels)+1) # always convert labels to 1 to n
-    one_hot = np.zeros((len(labels), len(cleaned_labels)))
-    for i in range(len(cleaned_labels)):
-        one_hot[i, labels[i]-1] = 1 # assume that labels are 1 to max_labels so we -1
-
-    return one_hot
 
 def get_all_labels(graphs, label_type='node'):
     labels = set()

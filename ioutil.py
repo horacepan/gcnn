@@ -34,6 +34,19 @@ def _clean_adj_lst(adj_lst):
 
     return adj_lsts
 
+def make_one_hot(labels):
+    '''
+    Takes in a nx1 vector of discrete labels(or a list).
+    Returns nxc vector, where c is the total number of discrete labels.
+    '''
+    unique_labels = list(set(labels))
+    cleaned_labels = range(1, len(unique_labels)+1) # always convert labels to 1 to n
+    one_hot = np.zeros((len(labels), len(cleaned_labels)))
+    for i in range(len(cleaned_labels)):
+        one_hot[i, labels[i]-1] = 1 # assume that labels are 1 to max_labels so we -1
+
+    return one_hot
+
 def train_val_test_split(data, labels, proportions):
     '''
     Proportions is a list of proportions for the train, val and test split
@@ -90,7 +103,7 @@ def load_mat(fname, name, lname=None, one_hot=True):
 
     # Turn the labels into one hot encoded vectors.
     if one_hot:
-        labels = util.make_one_hot(labels)
+        labels = make_one_hot(labels)
 
     return graphs, labels
 
@@ -105,3 +118,4 @@ def load_dataset(fname, name, params):
     normalized_data = util.gen_channels(**params)
 
     return normalized_data, labels
+

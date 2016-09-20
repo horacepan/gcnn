@@ -37,6 +37,7 @@ class GCNN(object):
         out_channels_1 = 8
         out_channels_2 = 4
         fc_layer_shape = [4 * self._width, 2]
+
         with tf.name_scope('conv1'):
             filter_shape = (1, self._nbr_size, self._num_vert_labels, self._out_channels_1)
             conv_filter = variable(shape=filter_shape, stddev=0.1, name='filter_c1')
@@ -44,6 +45,7 @@ class GCNN(object):
                                  padding='VALID', name='conv_c1')
             conv1 = tf.nn.relu(conv1, name='relu_c1')
             conv1 = tf.nn.dropout(conv1, self._dropout, name='dropout_c1')
+
         with tf.name_scope('conv2'):
             filter_shape = (1, 1,  self._out_channels_1, self._out_channels_2)
             conv_filter = variable(shape=filter_shape, stddev=0.1, name='filter_c2')
@@ -51,12 +53,14 @@ class GCNN(object):
                                  padding='VALID', name='conv_c2')
             conv2 = tf.nn.relu(conv2, name='relu_c2')
             conv2 = tf.nn.dropout(conv2, self._dropout, name='dropped_c2')
+
         with tf.name_scope('fc_layer'):
             shape = conv2.get_shape().as_list()
             reshaped = tf.reshape(conv2, [shape[0], -1])
             weight = variable([8*self._width, self._num_output], stddev=0.1, name='fc_weight')
             bias = tf.Variable(tf.zeros(2), name='fc_bias')
             logits = tf.nn.bias_add(tf.matmul(reshaped, weight), bias, name='logits')
+
         return logits
 
     def _build_graph(self):
@@ -95,7 +99,7 @@ class GCNN(object):
                 }
                 parts_to_compute = [self._opt, self._loss, self._train_prediction]
                 opt, loss, train_pred = sess.run(parts_to_compute, feed_dict)
-                if iteration % 500 == 0:
+                if iteration % 100 == 0:
                     print("Iteration %d" % iteration)
                     valid_acc = util.accuracy(self._val_prediction.eval(), self._val['labels'])
                     train_acc = util.accuracy(train_pred, batch_labels)

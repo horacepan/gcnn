@@ -5,18 +5,19 @@ import pdb
 class Graph(object):
 
     def __init__(self, adj_mat, node_labels_dict, edge_labels_dict, adj_lst_dict=None):
-        self._adj_mat = adj_mat         # a nxn numpy array
-        self._node_labels_dict = node_labels_dict # map of node to their label
-        self._edge_labels_dict = edge_labels_dict # map of edge(i,j) to label
-        self._adj_lst_dict = adj_lst_dict         # map from vertex id to list of vertex ids
+        self._adj_mat = adj_mat                     # a nxn numpy array
+        self._node_labels_dict = node_labels_dict   # map of node to their label
+        self._edge_labels_dict = edge_labels_dict   # map of edge(i,j) to label
+        self._adj_lst_dict = adj_lst_dict           # map from vertex id to list of vertex ids
         self._vertices = range(1, len(self._adj_mat) + 1)       # vertex ids will always be 1 to n
         self._distances = util.floyd_warshall(self._adj_mat)    # matrix of pairwise distances
-        if adj_lst_dict == None:
-            self._adj_lst_dict = util.gen_adj_lst_dict(adj_mat)
 
     @property
     def size(self):
         return self._adj_mat.shape[0]
+
+    def _vid_to_index(self, vertex_id):
+        return vertex_id - 1
 
     def node_labels(self):
         return set(self._node_labels_dict.values())
@@ -24,7 +25,7 @@ class Graph(object):
     def edge_labels(self):
         return set(self._edge_labels_dict.values())
 
-    def labels(self, vert_id):
+    def get_labels(self, vert_id):
         '''
         Input: a list of vertex ids(int) or a single vertex id(int)
         Returns the labels of the given vertex/vertices. Use none if the vert_id isnt in the graph.
@@ -33,6 +34,12 @@ class Graph(object):
             return map(lambda x: self._node_labels_dict.get(x, None), vert_id)
         else:
             return [self._node_labels_dict.get(vert_id, None)]
+
+    def get_edge_labels(self, edge):
+        if type(vert_id) == list:
+            return map(lambda e: self._edge_labels_dict.get(e, None), edge)
+        else:
+            return [self._edge_labels_dict.get(edge, None)]
 
     def neighbors(self, vert_id):
         '''
@@ -49,6 +56,17 @@ class Graph(object):
             for v in vert_id:
                 nbrs = nbrs.union(self.neighbors(v))
             return list(nbrs)
+
+    def distance(self, i, j):
+        '''
+        Returns the length of the shortest path between vertex i and j. i and j are vertex ids.
+        '''
+        if not (1 <= i <= self.size) or not(1 <= j <= self.size):
+            raise Exception("vertex %d or %d is not a valid vertex id" %(i, j))
+
+        ind_i = self._vid_to_index(i)
+        ind_j = self._vid_to_index(j)
+        return self._distances[ind_i, ind_j]
 
     def ball(self, vert_id, radius=None, max_size=None):
         '''
@@ -92,7 +110,7 @@ class Graph(object):
 
         # Sort b distance to the origin vert_id, and use label as a tie breaker
         if sortfunc == None:
-            sortfunc = lambda x: (self._distances[x, vert_id], self._node_labels_dict[x])
+            sortfunc = lambda x: (self.distance(x, vert_id), self._node_labels_dict[x])
 
         nbrs = set([vert_id])
         knbrs = []
@@ -107,11 +125,13 @@ class Graph(object):
         knbrs.sort(key=sortfunc)
         knbrs = self._get_k(knbrs, k) # pads or truncates the list to length k
         if labeled:
-            return self.labels(knbrs)
+            return self.get_labels(knbrs)
         else:
             return knbrs
 
     def knbrs_lst(self, vert_ids, k, sortfunc=None, labeled=True):
+        if type(vert_ids) != list:
+            vert_ids = [vert_ids]
         output_shape = (len(vert_ids), k)
         output = np.zeros(output_shape)
         for index, v in enumerate(vert_ids):

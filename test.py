@@ -23,7 +23,7 @@ def test_dataset(name):
         'train_dataset': train_dataset,
         'val': val,
         'test': test,
-        'batch_size': 32,
+        'batch_size': batch_size,
         'learning_rate': 0.005,
         'dropout': 0.5,
         'width': 17, # fix
@@ -31,9 +31,9 @@ def test_dataset(name):
         'num_vert_labels': 7,
     }
     gcnn = GCNN(**gcnn_params)
-    gcnn.train(max_iters=10000)
+    gcnn.train(max_iters=1000)
 
 if __name__ == '__main__':
     test_dataset('MUTAG')
     print("Done with MUTAG")
-    test_dataset('PTC')
+    #test_dataset('PTC')
